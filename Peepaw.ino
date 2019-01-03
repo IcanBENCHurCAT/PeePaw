@@ -1,3 +1,4 @@
+#include "MotorDriver.h"
 #include <IRremote.h>
 #include <IRremoteInt.h>
 //Constant Data
@@ -30,6 +31,8 @@ const TransmitMode mode = Infrared;
 char data = 0;
 IRrecv receiver(IR_PIN);
 decode_results results;
+MotorDriver motorsLeft(MOTOR_LEFT_1, MOTOR_LEFT_2);
+MotorDriver motorsRight(MOTOR_RIGHT_1, MOTOR_RIGHT_2);
 
 
 void setup() {
@@ -40,12 +43,12 @@ void setup() {
 
 	//If Infrared is Connected
 	receiver.enableIRIn();
-	receiver.blink13(true); //Not sure why this is done, but most tutorials have it
+	//receiver.blink13(true); //Not sure why this is done, but most tutorials have it
 
-	pinMode(MOTOR_LEFT_1, OUTPUT);
+	/*pinMode(MOTOR_LEFT_1, OUTPUT);
 	pinMode(MOTOR_LEFT_2, OUTPUT);
 	pinMode(MOTOR_RIGHT_1, OUTPUT);
-	pinMode(MOTOR_RIGHT_2, OUTPUT);
+	pinMode(MOTOR_RIGHT_2, OUTPUT);*/
 }
 
 void loop() {
@@ -134,40 +137,30 @@ void setLED(bool turnOn)
 
 void stop()
 {
-	digitalWrite(MOTOR_LEFT_1, LOW);
-	digitalWrite(MOTOR_LEFT_2, LOW);
-	digitalWrite(MOTOR_RIGHT_1, LOW);
-	digitalWrite(MOTOR_RIGHT_2, LOW);
+	motorsLeft.coast();
+	motorsRight.coast();
 }
 
 void forward()
 {
-	digitalWrite(MOTOR_LEFT_1, HIGH);
-	digitalWrite(MOTOR_LEFT_2, LOW);
-	digitalWrite(MOTOR_RIGHT_1, HIGH);
-	digitalWrite(MOTOR_RIGHT_2, LOW);
+	motorsLeft.forward();
+	motorsRight.forward();
 }
 
 void backward()
 {
-	digitalWrite(MOTOR_LEFT_1, LOW);
-	digitalWrite(MOTOR_LEFT_2, HIGH);
-	digitalWrite(MOTOR_RIGHT_1, LOW);
-	digitalWrite(MOTOR_RIGHT_2, HIGH);
+	motorsLeft.backward();
+	motorsLeft.backward();
 }
 
 void left()
 {
-	digitalWrite(MOTOR_LEFT_1, LOW);
-	digitalWrite(MOTOR_LEFT_2, HIGH);
-	digitalWrite(MOTOR_RIGHT_1, HIGH);
-	digitalWrite(MOTOR_RIGHT_2, LOW);
+	motorsLeft.backward();
+	motorsRight.forward();
 }
 
 void right()
 {
-	digitalWrite(MOTOR_LEFT_1, HIGH);
-	digitalWrite(MOTOR_LEFT_2, LOW);
-	digitalWrite(MOTOR_RIGHT_1, LOW);
-	digitalWrite(MOTOR_RIGHT_2, HIGH);
+	motorsLeft.forward();
+	motorsRight.backward();
 }

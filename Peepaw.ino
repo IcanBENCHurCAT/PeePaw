@@ -3,11 +3,14 @@
 #include <IRremoteInt.h>
 //Constant Data
 const int LED_PIN = 13;
-const int MOTOR_LEFT_1 = 7;
-const int MOTOR_LEFT_2 = 8;
-const int MOTOR_RIGHT_1 = 9;
+const int MOTOR_LEFT_ENABLE = 5;
+const int MOTOR_LEFT_1 = 6;
+const int MOTOR_LEFT_2 = 7;
+const int MOTOR_RIGHT_ENABLE = 9;
+const int MOTOR_RIGHT_1 = 11;
 const int MOTOR_RIGHT_2 = 10;
-const int IR_PIN = 11;
+const int IR_PIN = 3;
+const int SENSOR_PIN = 2;
 
 const char COMMAND_LEFT = 'L';
 const char COMMAND_RIGHT = 'R';
@@ -15,44 +18,59 @@ const char COMMAND_FORWARD = 'F';
 const char COMMAND_BACKWARD = 'B';
 const char COMMAND_STOP = 'S';
 
-
+const unsigned long COAST_TIME = 128L;
 
 enum TransmitMode
 {
 	Bluetooth,
 	Infrared,
-	Wifi
+	Wifi,
+	AutoPilot
 };
 
-const TransmitMode mode = Infrared;
+enum DriveState
+{
+	Driving,
+	Coasting,
+	Turning,
+	Reversing
+};
+
+const TransmitMode mode = AutoPilot;
+
 
 
 //Variable Data
 char data = 0;
+DriveState driveState = Coasting;
 IRrecv receiver(IR_PIN);
 decode_results results;
-MotorDriver motorsLeft(MOTOR_LEFT_1, MOTOR_LEFT_2);
-MotorDriver motorsRight(MOTOR_RIGHT_1, MOTOR_RIGHT_2);
+MotorDriver motorsLeft(MOTOR_LEFT_1, MOTOR_LEFT_2, MOTOR_LEFT_ENABLE);
+MotorDriver motorsRight(MOTOR_RIGHT_1, MOTOR_RIGHT_2, MOTOR_RIGHT_ENABLE);
 
 
 void setup() {
-	pinMode(LED_PIN, OUTPUT);
 
-	//If Bluetooth is Connected
 	Serial.begin(9600);
 
-	//If Infrared is Connected
-	receiver.enableIRIn();
-	//receiver.blink13(true); //Not sure why this is done, but most tutorials have it
+	if (mode == Infrared)
+	{
+		receiver.enableIRIn();
+	}
+	else if (mode == AutoPilot)
+	{
+		pinMode(SENSOR_PIN, INPUT);
+	}
 
-	/*pinMode(MOTOR_LEFT_1, OUTPUT);
-	pinMode(MOTOR_LEFT_2, OUTPUT);
-	pinMode(MOTOR_RIGHT_1, OUTPUT);
-	pinMode(MOTOR_RIGHT_2, OUTPUT);*/
+	
 }
 
 void loop() {
-	if (mode == Bluetooth)
+	if (mode == AutoPilot)
+	{
+		doAutoPilot();
+	}
+	else if (mode == Bluetooth)
 	{
 		//Need bluetooth TX/RX before this can be enabled
 		doBluetooth();
@@ -68,7 +86,6 @@ void loop() {
 
 }
 
-const unsigned long COAST_TIME = 1000L;
 void doInfrared()
 {
 	if (receiver.decode(&results))
@@ -77,24 +94,29 @@ void doInfrared()
 
 		switch (results.value)
 		{
-		case 0x0F2B22:
+		case 0x20DF6A95:
 			forward();
-			delay(COAST_TIME);
+			Serial.println("forward");
+			delay(COAST_TIME*4);
 			break;
-		case 0x0F2B24:
-			backward();
-			delay(COAST_TIME);
-			break;
-		case 0x0F2B26:
+		case 0x20DF1BE4:
 			left();
+			Serial.println("left");
 			delay(COAST_TIME);
 			break;
-		case 0x0F2B28:
+		case 0x20DFEB14:
+			backward();
+			Serial.println("backward");
+			delay(COAST_TIME*2);
+			break;
+		case 0x20DF9B64:
 			right();
+			Serial.println("right");
 			delay(COAST_TIME);
 			break;
 		}
-
+		motorsLeft.coast();
+		motorsRight.coast();
 		receiver.resume();
 	}
 }
@@ -103,7 +125,6 @@ void doBluetooth()
 {
 	if (Serial.available() > 0)
 	{
-		setLED(true);
 		data = Serial.read();
 		Serial.println(data);
 		switch (data)
@@ -127,12 +148,44 @@ void doBluetooth()
 	}
 }
 
-void setLED(bool turnOn)
+void doAutoPilot()
 {
-	if (turnOn)
-		digitalWrite(LED_PIN, HIGH);
+	int test = digitalRead(SENSOR_PIN);
+	/*if (test == LOW)
+	{
+		Serial.println("Object Detected");
+		delay(5000);
+	}
 	else
-		digitalWrite(LED_PIN, LOW);
+	{
+		Serial.println("All Clear");
+		delay(5000);
+	}*/
+
+	if (test == LOW && driveState == Coasting)
+	{
+		driveState = Turning;
+		left();
+		delay(COAST_TIME);
+		return;
+	}
+	else if (test == LOW && driveState == Driving)
+	{
+		driveState = Coasting;
+		stop();
+		delay(COAST_TIME / 2);
+		backward();
+		delay(COAST_TIME / 2);
+		left();
+		delay(COAST_TIME);
+		return;
+	}
+	else if(driveState != Driving && test == HIGH)
+	{
+		driveState = Driving;
+		forward();
+		return;
+	}
 }
 
 void stop()
@@ -143,24 +196,24 @@ void stop()
 
 void forward()
 {
-	motorsLeft.forward();
-	motorsRight.forward();
+	motorsLeft.spinLeft();
+	motorsRight.spinRight();
 }
 
 void backward()
 {
-	motorsLeft.backward();
-	motorsLeft.backward();
+	motorsLeft.spinRight();
+	motorsRight.spinLeft();
 }
 
 void left()
 {
-	motorsLeft.backward();
-	motorsRight.forward();
+	motorsLeft.spinLeft();
+	motorsRight.spinLeft();
 }
 
 void right()
 {
-	motorsLeft.forward();
-	motorsRight.backward();
+	motorsLeft.spinRight();
+	motorsRight.spinRight();
 }

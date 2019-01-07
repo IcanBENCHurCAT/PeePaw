@@ -5,11 +5,11 @@ class MotorDriver
 {
 private:
 	void setControlPins();
-	int controlPin1, controlPin2;
+	int controlPin1, controlPin2, enablePin;
 public:
-	MotorDriver(int pin1, int pin2);
-	void forward();
-	void backward();
+	MotorDriver(int pin1, int pin2, int enable);
+	void spinRight();
+	void spinLeft();
 	void coast();
 	void brake();
 };

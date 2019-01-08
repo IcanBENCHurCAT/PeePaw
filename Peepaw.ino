@@ -1,16 +1,18 @@
 #include "MotorDriver.h"
+#include "UltraSonic.h"
 #include <IRremote.h>
 #include <IRremoteInt.h>
 //Constant Data
-const int LED_PIN = 13;
-const int MOTOR_LEFT_ENABLE = 5;
-const int MOTOR_LEFT_1 = 6;
-const int MOTOR_LEFT_2 = 7;
-const int MOTOR_RIGHT_ENABLE = 9;
-const int MOTOR_RIGHT_1 = 11;
-const int MOTOR_RIGHT_2 = 10;
-const int IR_PIN = 3;
-const int SENSOR_PIN = 2;
+int MOTOR_LEFT_ENABLE = 5;
+int MOTOR_LEFT_1 = 6;
+int MOTOR_LEFT_2 = 7;
+int MOTOR_RIGHT_ENABLE = 9;
+int MOTOR_RIGHT_1 = 11;
+int MOTOR_RIGHT_2 = 10;
+int IR_PIN = 3;
+
+int SENSOR_PIN_RX = 2;
+int SENSOR_PIN_TX = 1;
 
 const char COMMAND_LEFT = 'L';
 const char COMMAND_RIGHT = 'R';
@@ -36,7 +38,7 @@ enum DriveState
 	Reversing
 };
 
-const TransmitMode mode = AutoPilot;
+const TransmitMode mode = Infrared;
 
 
 
@@ -47,6 +49,7 @@ IRrecv receiver(IR_PIN);
 decode_results results;
 MotorDriver motorsLeft(MOTOR_LEFT_1, MOTOR_LEFT_2, MOTOR_LEFT_ENABLE);
 MotorDriver motorsRight(MOTOR_RIGHT_1, MOTOR_RIGHT_2, MOTOR_RIGHT_ENABLE);
+UltraSonic ultraSonic(SENSOR_PIN_RX, SENSOR_PIN_TX);
 
 
 void setup() {
@@ -59,8 +62,10 @@ void setup() {
 	}
 	else if (mode == AutoPilot)
 	{
-		pinMode(SENSOR_PIN, INPUT);
+		pinMode(SENSOR_PIN_RX, INPUT);
+		pinMode(SENSOR_PIN_TX, OUTPUT);
 	}
+
 
 	
 }
@@ -83,7 +88,9 @@ void loop() {
 	{
 		//Not implemented yet
 	}
-
+	Serial.print("Detecting a distance of ");
+	Serial.print(ultraSonic.detectCM());
+	Serial.println(" cm");
 }
 
 void doInfrared()
@@ -150,7 +157,7 @@ void doBluetooth()
 
 void doAutoPilot()
 {
-	int test = digitalRead(SENSOR_PIN);
+	int test = digitalRead(SENSOR_PIN_RX);
 	/*if (test == LOW)
 	{
 		Serial.println("Object Detected");

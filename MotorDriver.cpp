@@ -1,42 +1,41 @@
 ﻿#include "MotorDriver.h"
 
-MotorDriver::MotorDriver(int pin1, int pin2, int enable)
+MotorDriver::MotorDriver(int &pin1, int &pin2, int &enable)
 {
-	controlPin1 = pin1;
-	controlPin2 = pin2;
-	enablePin = enable;
-	setControlPins();
+	_controlPin1 = pin1;
+	_controlPin2 = pin2;
+	setControlPins(enable);
 }
 
 void MotorDriver::spinRight()
 {
-	digitalWrite(controlPin1, LOW);
-	digitalWrite(controlPin2, HIGH);
+	digitalWrite(_controlPin1, LOW);
+	digitalWrite(_controlPin2, HIGH);
 }
 
 void MotorDriver::spinLeft()
 {
-	digitalWrite(controlPin1, HIGH);
-	digitalWrite(controlPin2, LOW);
+	digitalWrite(_controlPin1, HIGH);
+	digitalWrite(_controlPin2, LOW);
 }
 
 void MotorDriver::coast()
 {
-	digitalWrite(controlPin1, LOW);
-	digitalWrite(controlPin2, LOW);
+	digitalWrite(_controlPin1, LOW);
+	digitalWrite(_controlPin2, LOW);
 }
 
 void MotorDriver::brake()
 {
-	digitalWrite(controlPin1, HIGH);
-	digitalWrite(controlPin2, HIGH);
+	digitalWrite(_controlPin1, HIGH);
+	digitalWrite(_controlPin2, HIGH);
 }
 
-void MotorDriver::setControlPins()
+void MotorDriver::setControlPins(int &enable)
 {
-	pinMode(enablePin, OUTPUT);
-	pinMode(controlPin1, OUTPUT);
-	pinMode(controlPin2, OUTPUT);
+	pinMode(enable, OUTPUT);
+	pinMode(_controlPin1, OUTPUT);
+	pinMode(_controlPin2, OUTPUT);
 
-	digitalWrite(enablePin, HIGH);
+	digitalWrite(enable, HIGH);
 }

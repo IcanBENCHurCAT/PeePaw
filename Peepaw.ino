@@ -2,6 +2,7 @@
 #include "UltraSonic.h"
 #include <IRremote.h>
 #include <IRremoteInt.h>
+#include <Servo.h>
 //Constant Data
 int MOTOR_LEFT_ENABLE = 5;
 int MOTOR_LEFT_1 = 6;
@@ -13,6 +14,8 @@ int IR_PIN = 3;
 
 int SENSOR_PIN_RX = 2;
 int SENSOR_PIN_TX = 1;
+
+int SERVO_PIN = 4;
 
 const char COMMAND_LEFT = 'L';
 const char COMMAND_RIGHT = 'R';
@@ -43,13 +46,19 @@ const TransmitMode mode = Infrared;
 
 
 //Variable Data
-char data = 0;
+char data = 0; //Bluetooth data
+
 DriveState driveState = Coasting;
+
 IRrecv receiver(IR_PIN);
 decode_results results;
+
 MotorDriver motorsLeft(MOTOR_LEFT_1, MOTOR_LEFT_2, MOTOR_LEFT_ENABLE);
 MotorDriver motorsRight(MOTOR_RIGHT_1, MOTOR_RIGHT_2, MOTOR_RIGHT_ENABLE);
+
 UltraSonic ultraSonic(SENSOR_PIN_RX, SENSOR_PIN_TX);
+Servo servo;
+int servoPosition = 0;
 
 
 void setup() {
@@ -62,12 +71,13 @@ void setup() {
 	}
 	else if (mode == AutoPilot)
 	{
-		pinMode(SENSOR_PIN_RX, INPUT);
-		pinMode(SENSOR_PIN_TX, OUTPUT);
+
 	}
 
+	pinMode(SENSOR_PIN_RX, INPUT);
+	pinMode(SENSOR_PIN_TX, OUTPUT);
+	servo.attach(SERVO_PIN);
 
-	
 }
 
 void loop() {
@@ -83,14 +93,14 @@ void loop() {
 	else if (mode == Infrared)
 	{
 		doInfrared();
+		Serial.print("Detecting a distance of ");
+		Serial.print(ultraSonic.detectCM());
+		Serial.println(" cm");
 	}
 	else if (mode == Wifi)
 	{
 		//Not implemented yet
 	}
-	Serial.print("Detecting a distance of ");
-	Serial.print(ultraSonic.detectCM());
-	Serial.println(" cm");
 }
 
 void doInfrared()
@@ -104,7 +114,7 @@ void doInfrared()
 		case 0x20DF6A95:
 			forward();
 			Serial.println("forward");
-			delay(COAST_TIME*4);
+			delay(COAST_TIME * 4);
 			break;
 		case 0x20DF1BE4:
 			left();
@@ -114,7 +124,7 @@ void doInfrared()
 		case 0x20DFEB14:
 			backward();
 			Serial.println("backward");
-			delay(COAST_TIME*2);
+			delay(COAST_TIME * 2);
 			break;
 		case 0x20DF9B64:
 			right();
@@ -122,8 +132,7 @@ void doInfrared()
 			delay(COAST_TIME);
 			break;
 		}
-		motorsLeft.coast();
-		motorsRight.coast();
+		stop();
 		receiver.resume();
 	}
 }
@@ -157,7 +166,62 @@ void doBluetooth()
 
 void doAutoPilot()
 {
-	int test = digitalRead(SENSOR_PIN_RX);
+
+	if (driveState == Driving)
+	{
+		double test = ultraSonic.detectCM();
+		if (test > 0.00 && test < 10)
+		{
+			//Avoid obstacle
+			driveState = DriveState::Coasting;
+			stop();
+
+			//Search for new path using US
+		}
+	}
+	else if (driveState == Coasting)
+	{
+
+		servoPosition = 90;
+		servo.write(servoPosition);
+		delay(1000);
+		double test = ultraSonic.detectCM();
+		if (test < 0.001 || test > 10)
+		{
+			right();
+			servoPosition = 0;
+			servo.write(servoPosition);
+			delay(COAST_TIME);
+			forward();
+			driveState = Driving;
+		}
+		else 
+		{
+			servoPosition = -90;
+			servo.write(servoPosition);
+			delay(1000);
+			test = ultraSonic.detectCM();
+			if (test < 0.001 || test > 10)
+			{
+				left();
+				servoPosition = 0;
+				servo.write(servoPosition);
+				delay(COAST_TIME);
+				forward();
+				driveState = Driving;
+			}
+		}
+
+		servoPosition = 0;
+		servo.write(servoPosition);
+
+		if (driveState != Driving)
+		{
+			backward();
+			delay(COAST_TIME);
+		}
+
+	}
 	/*if (test == LOW)
 	{
 		Serial.println("Object Detected");
@@ -169,7 +233,7 @@ void doAutoPilot()
 		delay(5000);
 	}*/
 
-	if (test == LOW && driveState == Coasting)
+	/*if (test == LOW && driveState == Coasting)
 	{
 		driveState = Turning;
 		left();
@@ -192,7 +256,7 @@ void doAutoPilot()
 		driveState = Driving;
 		forward();
 		return;
-	}
+	}*/
 }
 
 void stop()

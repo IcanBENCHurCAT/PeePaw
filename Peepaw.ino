@@ -166,7 +166,6 @@ void doBluetooth()
 
 void doAutoPilot()
 {
-
 	if (driveState == Driving)
 	{
 		double test = ultraSonic.detectCM();
@@ -222,41 +221,6 @@ void doAutoPilot()
 		}
 
 	}
-	/*if (test == LOW)
-	{
-		Serial.println("Object Detected");
-		delay(5000);
-	}
-	else
-	{
-		Serial.println("All Clear");
-		delay(5000);
-	}*/
-
-	/*if (test == LOW && driveState == Coasting)
-	{
-		driveState = Turning;
-		left();
-		delay(COAST_TIME);
-		return;
-	}
-	else if (test == LOW && driveState == Driving)
-	{
-		driveState = Coasting;
-		stop();
-		delay(COAST_TIME / 2);
-		backward();
-		delay(COAST_TIME / 2);
-		left();
-		delay(COAST_TIME);
-		return;
-	}
-	else if(driveState != Driving && test == HIGH)
-	{
-		driveState = Driving;
-		forward();
-		return;
-	}*/
 }
 
 void stop()
@@ -279,12 +243,22 @@ void backward()
 
 void left()
 {
+	setSpeed(128);
 	motorsLeft.spinLeft();
 	motorsRight.spinLeft();
+	setSpeed(255);
 }
 
 void right()
 {
+	setSpeed(128);
 	motorsLeft.spinRight();
 	motorsRight.spinRight();
+	setSpeed(255);
+}
+
+void setSpeed(unsigned int speed)
+{
+	motorsLeft.setSpeed(speed);
+	motorsRight.setSpeed(speed);
 }

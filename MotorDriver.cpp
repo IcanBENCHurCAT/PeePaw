@@ -4,7 +4,8 @@ MotorDriver::MotorDriver(int &pin1, int &pin2, int &enable)
 {
 	_controlPin1 = pin1;
 	_controlPin2 = pin2;
-	setControlPins(enable);
+	_enablePin = enable;
+	setControlPins();
 }
 
 void MotorDriver::spinRight()
@@ -31,11 +32,16 @@ void MotorDriver::brake()
 	digitalWrite(_controlPin2, HIGH);
 }
 
-void MotorDriver::setControlPins(int &enable)
+void MotorDriver::setControlPins()
 {
-	pinMode(enable, OUTPUT);
+	pinMode(_enablePin, OUTPUT);
 	pinMode(_controlPin1, OUTPUT);
 	pinMode(_controlPin2, OUTPUT);
 
-	digitalWrite(enable, HIGH);
+	setSpeed(255);
+}
+
+void MotorDriver::setSpeed(unsigned int speed)
+{
+	analogWrite(_enablePin, speed);
 }

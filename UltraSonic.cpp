@@ -1,6 +1,6 @@
 #include "UltraSonic.h"
 
-UltraSonic::UltraSonic(int &pinRx, int &pinTx)
+UltraSonic::UltraSonic(int pinRx, int pinTx)
 {
 	_pinRx = pinRx;
 	_pinTx = pinTx;
@@ -18,15 +18,15 @@ unsigned long UltraSonic::detectDistance()
 
 	digitalWrite(_pinTx, LOW);
 
-	return pulseIn(_pinRx, HIGH);
+	return pulseIn(_pinRx, HIGH, 50000UL); //will not look for objects greater than 8 meters away
 }
 
 double UltraSonic::detectCM()
 {
-	return (detectDistance() / 2) / 29.1;
+	return (detectDistance() / 2.0) / 29.1;
 }
 
 double UltraSonic::detectINCH()
 {
-	return (detectDistance() / 2) / 74;
+	return (detectDistance() / 2.0) / 74.0;
 }

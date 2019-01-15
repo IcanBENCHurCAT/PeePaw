@@ -1,6 +1,6 @@
 ﻿#include "MotorDriver.h"
 
-MotorDriver::MotorDriver(int &pin1, int &pin2, int &enable)
+MotorDriver::MotorDriver(int pin1, int pin2, int enable)
 {
 	_controlPin1 = pin1;
 	_controlPin2 = pin2;

@@ -2,28 +2,27 @@
 #include "UltraSonic.h"
 #include <IRremote.h>
 #include <IRremoteInt.h>
-#include <Servo.h>
+#define SLOW 128
+#define FAST 255
 //Constant Data
-int MOTOR_LEFT_ENABLE = 5;
-int MOTOR_LEFT_1 = 6;
-int MOTOR_LEFT_2 = 7;
-int MOTOR_RIGHT_ENABLE = 9;
-int MOTOR_RIGHT_1 = 11;
-int MOTOR_RIGHT_2 = 10;
-int IR_PIN = 3;
+#define MOTOR_LEFT_ENABLE 5
+#define MOTOR_LEFT_1 6
+#define MOTOR_LEFT_2 7
+#define MOTOR_RIGHT_ENABLE 9
+#define MOTOR_RIGHT_1 11
+#define MOTOR_RIGHT_2 10
+#define IR_PIN 3
 
-int SENSOR_PIN_RX = 2;
-int SENSOR_PIN_TX = 1;
+#define SENSOR_PIN_RX 13 //echo
+#define SENSOR_PIN_TX 12 //trigger
 
-int SERVO_PIN = 4;
+#define COMMAND_LEFT 'L'
+#define COMMAND_RIGHT 'R'
+#define COMMAND_FORWARD 'F'
+#define COMMAND_BACKWARD 'B'
+#define COMMAND_STOP 'S'
 
-const char COMMAND_LEFT = 'L';
-const char COMMAND_RIGHT = 'R';
-const char COMMAND_FORWARD = 'F';
-const char COMMAND_BACKWARD = 'B';
-const char COMMAND_STOP = 'S';
-
-const unsigned long COAST_TIME = 128L;
+#define COAST_TIME 128L
 
 enum TransmitMode
 {
@@ -41,7 +40,7 @@ enum DriveState
 	Reversing
 };
 
-const TransmitMode mode = Infrared;
+const TransmitMode mode = AutoPilot;
 
 
 
@@ -57,8 +56,7 @@ MotorDriver motorsLeft(MOTOR_LEFT_1, MOTOR_LEFT_2, MOTOR_LEFT_ENABLE);
 MotorDriver motorsRight(MOTOR_RIGHT_1, MOTOR_RIGHT_2, MOTOR_RIGHT_ENABLE);
 
 UltraSonic ultraSonic(SENSOR_PIN_RX, SENSOR_PIN_TX);
-Servo servo;
-int servoPosition = 0;
+
 
 
 void setup() {
@@ -74,9 +72,9 @@ void setup() {
 
 	}
 
+	setSpeed(SLOW);
 	pinMode(SENSOR_PIN_RX, INPUT);
 	pinMode(SENSOR_PIN_TX, OUTPUT);
-	servo.attach(SERVO_PIN);
 
 }
 
@@ -164,60 +162,55 @@ void doBluetooth()
 	}
 }
 
+bool isInRange(double cm)
+{
+	if (cm > 0.00 && cm < 10)
+		return true;
+
+	return false;
+}
+
+unsigned long firstCounter = 0;
+bool bFast = false;
 void doAutoPilot()
 {
 	if (driveState == Driving)
 	{
+		if (firstCounter == 0)
+			firstCounter = millis();
 		double test = ultraSonic.detectCM();
-		if (test > 0.00 && test < 10)
+		if (isInRange(test))
 		{
-			//Avoid obstacle
 			driveState = DriveState::Coasting;
 			stop();
-
-			//Search for new path using US
+			bFast = false;
+			firstCounter = 0;
+			setSpeed(SLOW);
+		}
+		else if (bFast == false)
+		{
+			unsigned long current = millis();
+			if (abs(current - firstCounter) > 1000)
+			{
+				setSpeed(FAST);
+				bFast = true;
+			}
 		}
 	}
 	else if (driveState == Coasting)
 	{
-
-		servoPosition = 90;
-		servo.write(servoPosition);
-		delay(1000);
 		double test = ultraSonic.detectCM();
-		if (test < 0.001 || test > 10)
+		if (isInRange(test))
 		{
+			setSpeed(FAST);
 			right();
-			servoPosition = 0;
-			servo.write(servoPosition);
-			delay(COAST_TIME);
-			forward();
-			driveState = Driving;
+			delay(COAST_TIME / 4);
 		}
 		else 
 		{
-			servoPosition = -90;
-			servo.write(servoPosition);
-			delay(1000);
-			test = ultraSonic.detectCM();
-			if (test < 0.001 || test > 10)
-			{
-				left();
-				servoPosition = 0;
-				servo.write(servoPosition);
-				delay(COAST_TIME);
-				forward();
-				driveState = Driving;
-			}
-		}
-
-		servoPosition = 0;
-		servo.write(servoPosition);
-
-		if (driveState != Driving)
-		{
-			backward();
-			delay(COAST_TIME);
+			setSpeed(SLOW);
+			forward();
+			driveState = Driving;
 		}
 
 	}
@@ -243,18 +236,14 @@ void backward()
 
 void left()
 {
-	setSpeed(128);
 	motorsLeft.spinLeft();
 	motorsRight.spinLeft();
-	setSpeed(255);
 }
 
 void right()
 {
-	setSpeed(128);
 	motorsLeft.spinRight();
 	motorsRight.spinRight();
-	setSpeed(255);
 }
 
 void setSpeed(unsigned int speed)

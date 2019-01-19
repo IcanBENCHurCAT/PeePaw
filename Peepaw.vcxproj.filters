@@ -27,6 +27,9 @@
     <ClInclude Include="UltraSonic.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="PinDefinitions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MotorDriver.cpp">

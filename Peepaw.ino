@@ -2,19 +2,7 @@
 #include "UltraSonic.h"
 #include <IRremote.h>
 #include <IRremoteInt.h>
-#define SLOW 128
-#define FAST 255
-//Constant Data
-#define MOTOR_LEFT_ENABLE 5
-#define MOTOR_LEFT_1 6
-#define MOTOR_LEFT_2 7
-#define MOTOR_RIGHT_ENABLE 9
-#define MOTOR_RIGHT_1 11
-#define MOTOR_RIGHT_2 10
-#define IR_PIN 3
-
-#define SENSOR_PIN_RX 13 //echo
-#define SENSOR_PIN_TX 12 //trigger
+#include "PinDefinitions.h"
 
 #define COMMAND_LEFT 'L'
 #define COMMAND_RIGHT 'R'
@@ -23,6 +11,8 @@
 #define COMMAND_STOP 'S'
 
 #define COAST_TIME 128L
+#define SLOW 128
+#define FAST 255
 
 enum TransmitMode
 {
@@ -42,9 +32,6 @@ enum DriveState
 
 const TransmitMode mode = AutoPilot;
 
-
-
-//Variable Data
 char data = 0; //Bluetooth data
 
 DriveState driveState = Coasting;
@@ -56,8 +43,6 @@ MotorDriver motorsLeft(MOTOR_LEFT_1, MOTOR_LEFT_2, MOTOR_LEFT_ENABLE);
 MotorDriver motorsRight(MOTOR_RIGHT_1, MOTOR_RIGHT_2, MOTOR_RIGHT_ENABLE);
 
 UltraSonic ultraSonic(SENSOR_PIN_RX, SENSOR_PIN_TX);
-
-
 
 void setup() {
 
@@ -162,9 +147,17 @@ void doBluetooth()
 	}
 }
 
-bool isInRange(double cm)
+bool isInRange(double& cm)
 {
-	if (cm > 0.00 && cm < 10)
+	if (cm > 0.00 && cm < 10.0)
+		return true;
+
+	return false;
+}
+
+bool isInLongRange(double& cm)
+{
+	if (cm > 10.0 && cm < 40.0)
 		return true;
 
 	return false;
@@ -187,10 +180,16 @@ void doAutoPilot()
 			firstCounter = 0;
 			setSpeed(SLOW);
 		}
+		else if (isInLongRange(test))
+		{
+			bFast = false;
+			firstCounter = 0;
+			setSpeed(SLOW);
+		}
 		else if (bFast == false)
 		{
 			unsigned long current = millis();
-			if (abs(current - firstCounter) > 1000)
+			if (current - firstCounter > 1000)
 			{
 				setSpeed(FAST);
 				bFast = true;

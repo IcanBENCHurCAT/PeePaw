@@ -1,7 +1,7 @@
 #include "MotorDriver.h"
 #include "UltraSonic.h"
-#include <IRremote.h>
-#include <IRremoteInt.h>
+//#include <RobotIRremote.h>
+//#include <RobotIRremoteInt.h>
 #include "PinDefinitions.h"
 
 #define COMMAND_LEFT 'L'
@@ -36,8 +36,8 @@ char data = 0; //Bluetooth data
 
 DriveState driveState = Coasting;
 
-IRrecv receiver(IR_PIN);
-decode_results results;
+// IRrecv receiver(IR_PIN);
+// decode_results results;
 
 MotorDriver motorsLeft(MOTOR_LEFT_1, MOTOR_LEFT_2, MOTOR_LEFT_ENABLE);
 MotorDriver motorsRight(MOTOR_RIGHT_1, MOTOR_RIGHT_2, MOTOR_RIGHT_ENABLE);
@@ -46,11 +46,11 @@ UltraSonic ultraSonic(SENSOR_PIN_RX, SENSOR_PIN_TX);
 
 void setup() {
 
-	Serial.begin(9600);
+	//Serial.begin(9600);
 
 	if (mode == Infrared)
 	{
-		receiver.enableIRIn();
+		//receiver.enableIRIn();
 	}
 	else if (mode == AutoPilot)
 	{
@@ -76,9 +76,9 @@ void loop() {
 	else if (mode == Infrared)
 	{
 		doInfrared();
-		Serial.print("Detecting a distance of ");
-		Serial.print(ultraSonic.detectCM());
-		Serial.println(" cm");
+		// Serial.print("Detecting a distance of ");
+		// Serial.print(ultraSonic.detectCM());
+		// Serial.println(" cm");
 	}
 	else if (mode == Wifi)
 	{
@@ -88,36 +88,36 @@ void loop() {
 
 void doInfrared()
 {
-	if (receiver.decode(&results))
-	{
-		Serial.println(results.value, HEX);
+	// if (receiver.decode(&results))
+	// {
+	// 	Serial.println(results.value, HEX);
 
-		switch (results.value)
-		{
-		case 0x20DF6A95:
-			forward();
-			Serial.println("forward");
-			delay(COAST_TIME * 4);
-			break;
-		case 0x20DF1BE4:
-			left();
-			Serial.println("left");
-			delay(COAST_TIME);
-			break;
-		case 0x20DFEB14:
-			backward();
-			Serial.println("backward");
-			delay(COAST_TIME * 2);
-			break;
-		case 0x20DF9B64:
-			right();
-			Serial.println("right");
-			delay(COAST_TIME);
-			break;
-		}
-		stop();
-		receiver.resume();
-	}
+	// 	switch (results.value)
+	// 	{
+	// 	case 0x20DF6A95:
+	// 		forward();
+	// 		Serial.println("forward");
+	// 		delay(COAST_TIME * 4);
+	// 		break;
+	// 	case 0x20DF1BE4:
+	// 		left();
+	// 		Serial.println("left");
+	// 		delay(COAST_TIME);
+	// 		break;
+	// 	case 0x20DFEB14:
+	// 		backward();
+	// 		Serial.println("backward");
+	// 		delay(COAST_TIME * 2);
+	// 		break;
+	// 	case 0x20DF9B64:
+	// 		right();
+	// 		Serial.println("right");
+	// 		delay(COAST_TIME);
+	// 		break;
+	// 	}
+	// 	stop();
+	// 	receiver.resume();
+	// }
 }
 
 void doBluetooth()
@@ -174,7 +174,7 @@ void doAutoPilot()
 		double test = ultraSonic.detectCM();
 		if (isInRange(test))
 		{
-			driveState = DriveState::Coasting;
+			driveState = Coasting;
 			stop();
 			bFast = false;
 			firstCounter = 0;

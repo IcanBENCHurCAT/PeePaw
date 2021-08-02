@@ -1,0 +1,4 @@
+{
+    "sketch": "Peepaw.ino",
+    "board": "arduino:avr:uno"
+}

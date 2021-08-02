@@ -3,12 +3,13 @@
 //#include <RobotIRremote.h>
 //#include <RobotIRremoteInt.h>
 #include "PinDefinitions.h"
+#include "SoftwareSerial.h"
 
-#define COMMAND_LEFT 'L'
-#define COMMAND_RIGHT 'R'
-#define COMMAND_FORWARD 'F'
-#define COMMAND_BACKWARD 'B'
-#define COMMAND_STOP 'S'
+#define COMMAND_LEFT 1
+#define COMMAND_RIGHT 2
+#define COMMAND_FORWARD 3
+#define COMMAND_BACKWARD 4
+#define COMMAND_STOP 5
 
 #define COAST_TIME 128L
 #define SLOW 128
@@ -32,7 +33,7 @@ enum DriveState
 
 const TransmitMode mode = AutoPilot;
 
-char data = 0; //Bluetooth data
+int data = 0; //Bluetooth data
 
 DriveState driveState = Coasting;
 
@@ -44,9 +45,12 @@ MotorDriver motorsRight(MOTOR_RIGHT_1, MOTOR_RIGHT_2, MOTOR_RIGHT_ENABLE);
 
 UltraSonic ultraSonic(SENSOR_PIN_RX, SENSOR_PIN_TX);
 
+SoftwareSerial btModule(BT_PIN_RX, BT_PIN_TX);
+
 void setup() {
 
-	//Serial.begin(9600);
+	Serial.begin(9600);
+	btModule.begin(9600);
 
 	if (mode == Infrared)
 	{
@@ -122,9 +126,9 @@ void doInfrared()
 
 void doBluetooth()
 {
-	if (Serial.available() > 0)
+	if (btModule.available())
 	{
-		data = Serial.read();
+		data = btModule.read();
 		Serial.println(data);
 		switch (data)
 		{
@@ -144,6 +148,11 @@ void doBluetooth()
 			stop();
 			break;
 		}
+
+		char distance_data[32] = "";
+		sprintf(distance_data, "%30.2lf", ultraSonic.detectCM());
+		Serial.println(distance_data);
+		//btModule.write(distance_data);
 	}
 }
 
